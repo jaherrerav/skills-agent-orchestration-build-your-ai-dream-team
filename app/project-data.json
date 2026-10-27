@@ -1,0 +1,36 @@
+{
+  "projects": [
+    {
+      "name": "Community Garden",
+      "owner": "Mona Patel",
+      "status": "Active",
+      "recentActivity": "Published the volunteer sign-up flow and welcomed 18 new helpers.",
+      "priority": "High",
+      "summary": "Make it easy for neighbors to find a garden, join a workday, and share the harvest."
+    },
+    {
+      "name": "Open Data Toolkit",
+      "owner": "Jordan Lee",
+      "status": "At risk",
+      "recentActivity": "The data import is ready for review; a sample dataset is still needed.",
+      "priority": "High",
+      "summary": "Give local teams a simple, accessible way to publish and explore community data."
+    },
+    {
+      "name": "Mentor Match",
+      "owner": "Ravi Shah",
+      "status": "Active",
+      "recentActivity": "Completed the first round of mentor interviews and shared notes with the team.",
+      "priority": "Medium",
+      "summary": "Connect new contributors with experienced teammates for welcoming, practical support."
+    },
+    {
+      "name": "Neighborhood Stories",
+      "owner": "Elena Garcia",
+      "status": "Planned",
+      "recentActivity": "Collected story prompts and outlined a lightweight publishing guide.",
+      "priority": "Low",
+      "summary": "Help residents document local history through short stories, photos, and interviews."
+    }
+  ]
+}

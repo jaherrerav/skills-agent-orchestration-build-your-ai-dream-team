@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="A contributor-friendly overview of project status, ownership, activity, and priority."
+    >
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+      const DATA_URL = "project-data.json";
+
+      function createElement(tagName, className, text) {
+        const element = document.createElement(tagName);
+        if (className) {
+          element.className = className;
+        }
+        if (text !== undefined) {
+          element.textContent = text;
+        }
+        return element;
+      }
+
+      function displayValue(value, fallback = "Not provided") {
+        return typeof value === "string" && value.trim() ? value.trim() : fallback;
+      }
+
+      function normalizedValue(value) {
+        return displayValue(value, "").trim().toLowerCase();
+      }
+
+      function isAtRisk(project) {
+        const status = normalizedValue(project.status);
+        const priority = normalizedValue(project.priority);
+        return (
+          status.includes("risk") ||
+          status === "blocked" ||
+          status === "delayed" ||
+          priority === "urgent" ||
+          priority === "critical"
+        );
+      }
+
+      function isHighPriority(project) {
+        const priority = normalizedValue(project.priority);
+        return priority === "high" || priority === "urgent" || priority === "critical";
+      }
+
+      function renderProject(project) {
+        const article = createElement("article", "project-card");
+        const header = createElement("div", "project-card-header");
+        const title = createElement("h3", "project-card-title", displayValue(project.name));
+        const status = createElement(
+          "span",
+          "status-badge",
+          `Status: ${displayValue(project.status)}`,
+        );
+        status.dataset.status = normalizedValue(project.status);
+        header.append(title, status);
+
+        const summary = createElement(
+          "p",
+          "project-summary",
+          displayValue(project.summary, "A concise project summary has not been added yet."),
+        );
+
+        const metadata = createElement("div", "project-meta");
+        metadata.append(
+          createElement("span", "project-owner", `Owner: ${displayValue(project.owner)}`),
+        );
+
+        const priority = createElement(
+          "span",
+          "priority-badge",
+          `Priority: ${displayValue(project.priority)}`,
+        );
+        priority.dataset.priority = normalizedValue(project.priority);
+
+        const activity = createElement("p", "project-activity");
+        const activityLabel = createElement("strong", "", "Recent activity: ");
+        activity.append(
+          activityLabel,
+          document.createTextNode(displayValue(project.recentActivity)),
+        );
+
+        article.append(header, summary, metadata, priority, activity);
+        return article;
+      }
+
+      function showMessage(container, message, className) {
+        container.replaceChildren(createElement("p", className, message));
+      }
+
+      function updateStats(projects) {
+        document.querySelector("#total-projects").textContent = String(projects.length);
+        document.querySelector("#active-projects").textContent = String(
+          projects.filter((project) => normalizedValue(project.status) === "active").length,
+        );
+        document.querySelector("#at-risk-projects").textContent = String(
+          projects.filter(isAtRisk).length,
+        );
+        document.querySelector("#high-priority-projects").textContent = String(
+          projects.filter(isHighPriority).length,
+        );
+      }
+
+      async function loadProjects() {
+        const projectList = document.querySelector("#project-list");
+        const loadMessage = document.querySelector("#load-message");
+        loadMessage.textContent = "Loading project data…";
+        projectList.setAttribute("aria-busy", "true");
+        projectList.replaceChildren();
+
+        try {
+          const response = await fetch(DATA_URL);
+          if (!response.ok) {
+            throw new Error(`The project data request failed (${response.status}).`);
+          }
+
+          const data = await response.json();
+          if (!data || !Array.isArray(data.projects)) {
+            throw new Error("The project data file must contain a projects array.");
+          }
+
+          updateStats(data.projects);
+          if (data.projects.length === 0) {
+            showMessage(
+              projectList,
+              "There are no projects to show yet. Add a project to project-data.json to get started.",
+              "empty-state",
+            );
+            loadMessage.textContent = "No projects are currently listed.";
+            return;
+          }
+
+          const cards = data.projects.map((project) => renderProject(project || {}));
+          projectList.replaceChildren(...cards);
+          loadMessage.textContent = `${data.projects.length} ${
+            data.projects.length === 1 ? "project" : "projects"
+          } loaded.`;
+        } catch (error) {
+          updateStats([]);
+          showMessage(
+            projectList,
+            `Project data could not be loaded. ${error.message} Make sure the dashboard is served over HTTP, then try again.`,
+            "error-state",
+          );
+          loadMessage.textContent = "Project data failed to load.";
+        } finally {
+          projectList.setAttribute("aria-busy", "false");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelector("#retry-load").addEventListener("click", loadProjects);
+        loadProjects();
+      });
+    </script>
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard-header">
+        <div class="dashboard-heading">
+          <p class="dashboard-eyebrow">Team overview</p>
+          <h1 class="dashboard-title">Project Pulse</h1>
+          <p class="dashboard-description">
+            A clear view of what the team is building, who is moving it forward, and
+            where a little extra attention can help.
+          </p>
+        </div>
+        <p class="dashboard-updated" id="load-message" role="status" aria-live="polite">
+          Preparing project overview…
+        </p>
+      </header>
+
+      <section class="dashboard-stats" aria-label="Project overview">
+        <article class="stat-card">
+          <span class="stat-label">Total projects</span>
+          <span class="stat-value" id="total-projects">—</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Active</span>
+          <span class="stat-value" id="active-projects">—</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">At risk</span>
+          <span class="stat-value" id="at-risk-projects">—</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">High priority</span>
+          <span class="stat-value" id="high-priority-projects">—</span>
+        </article>
+      </section>
+
+      <section class="projects-section" aria-labelledby="projects-heading">
+        <div class="section-heading">
+          <h2 class="projects-heading" id="projects-heading">Projects</h2>
+          <button class="retry-button" id="retry-load" type="button">Refresh data</button>
+        </div>
+        <div
+          class="project-grid"
+          id="project-list"
+          aria-live="polite"
+          aria-busy="true"
+        ></div>
+      </section>
+    </main>
+  </body>
+</html>
